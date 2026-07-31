@@ -1,0 +1,42 @@
+# fleet.yaml -- THE configuration for the live fleet (datavation-fleet).
+# Same IaC pattern as the sandpit: every seat, its connectors and its routines are
+# declared here; provision.py stands them up; verify.py checks reality against it.
+# NO SECRETS -- names only. Secret values live in the cloud environment / secret store.
+
+schema_version: "0.1"
+
+fleet:
+  name: datavation-fleet
+  repo:
+    owner: Datavation
+    name: datavation-fleet
+    visibility: private
+    default_branch: main
+    allow_unrestricted_branch_pushes: false   # control gate: routines push to claude/* only
+
+  environment:
+    name: fleet-default
+    network_access: trusted
+    custom_allowed_domains: []
+    required_env_vars: []                      # per-seat routine ids/tokens added as seats migrate
+
+  # Memory write-back reconcile (Archy ruling 2026-07-31), enforced in reconcile.py.
+  memory_reconcile:
+    enabled: true
+    cadence: hourly                            # my call: a scheduled memory-only merge to main
+    merge_strategy: path-scoped-three-way      # detect concurrent main edits, never ff-clobber
+
+# Seats. Migrated one at a time, each proven PC-offline before the next (stop-and-show
+# before seat 2). Least privilege: a seat gets only the connectors its job needs.
+seats:
+  - name: cody
+    role: builder
+    source_seat: Cody
+    model: claude-opus-4-8
+    connectors: []                             # builder needs only the repo
+    memory_owner: true                         # own MEMORY.md/memory/ reconciled to main
+    triggers:
+      - type: api                              # interactive/agent wake
+      - type: schedule                         # unattended; paused until proven
+        cron: "23 * * * *"
+        enabled_by_default: false
