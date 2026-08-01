@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Write(agents/holly/**)",
+      "Edit(agents/holly/**)"
+    ]
+  }
+}

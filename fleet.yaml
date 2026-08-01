@@ -1,15 +1,27 @@
-# fleet.yaml -- THE configuration for the live fleet (datavation-fleet).
-# Same IaC pattern as the sandpit: every seat, its connectors and its routines are
-# declared here; provision.py stands them up; verify.py checks reality against it.
-# NO SECRETS -- names only. Secret values live in the cloud environment / secret store.
+# fleet.yaml -- THE configuration for a Court-of-Rex fleet.
+#
+# CLIENT-AGNOSTIC BY DESIGN (Rex/Archy 2026-08-01): the strategic deliverable is the
+# infrastructure-as-code, not this one fleet. Everything org/client-specific is an INPUT
+# in the `org` block below -- provision.py reads it, nothing is hardcoded. The SAME code
+# with a different `org` block stands up a client's fleet. Rebuild = one command.
+#
+# NO SECRETS -- names only. Secret values (bearer tokens, connector OAuth) live in the
+# cloud environment / secret store, injected at deploy time, never in the repo.
 
 schema_version: "0.1"
 
+# ---- INPUTS: the only place a deployment is tied to an organisation ----
+org:
+  name: Datavation                      # display name of the org this fleet serves
+  repo_owner: Datavation                # GitHub owner/org for the repo
+  repo_name: datavation-fleet           # repo name
+  # Connector *accounts* are chosen per seat below by connector id; the actual account
+  # identity is bound at deploy time via OAuth in the cloud environment, not here.
+
 fleet:
-  name: datavation-fleet
   repo:
-    owner: Datavation
-    name: datavation-fleet
+    owner: "${org.repo_owner}"          # resolved from org inputs by provision.py
+    name: "${org.repo_name}"
     visibility: private
     default_branch: main
     allow_unrestricted_branch_pushes: false   # control gate: routines push to claude/* only
@@ -18,25 +30,46 @@ fleet:
     name: fleet-default
     network_access: trusted
     custom_allowed_domains: []
-    required_env_vars: []                      # per-seat routine ids/tokens added as seats migrate
+    required_env_vars: []
 
   # Memory write-back reconcile (Archy ruling 2026-07-31), enforced in reconcile.py.
   memory_reconcile:
     enabled: true
-    cadence: hourly                            # my call: a scheduled memory-only merge to main
-    merge_strategy: path-scoped-three-way      # detect concurrent main edits, never ff-clobber
+    cadence: hourly
+    merge_strategy: path-scoped-three-way
 
-# Seats. Migrated one at a time, each proven PC-offline before the next (stop-and-show
-# before seat 2). Least privilege: a seat gets only the connectors its job needs.
+  # Wake model (Archy ruling 2026-08-01): EVENT-DRIVEN by default -- seats woken by
+  # event / API / board reads, not all on polling schedules. "Always-on per seat" is a
+  # future cost decision, parked, not needed to build.
+  wake_model: event-driven
+
+# Seats. Migrated as COPIES (parallel build -- OneDrive originals untouched). Each seat
+# gets ONLY the connectors its job needs (least privilege), and a structural in-session
+# write-boundary (defense-in-depth, generated into agents/<seat>/.claude/settings.json)
+# on top of the reconcile allowlist.
 seats:
   - name: cody
     role: builder
     source_seat: Cody
     model: claude-opus-4-8
-    connectors: []                             # builder needs only the repo
-    memory_owner: true                         # own MEMORY.md/memory/ reconciled to main
+    connectors: []                      # builder needs only the repo
+    memory_owner: true
     triggers:
-      - type: api                              # interactive/agent wake
-      - type: schedule                         # unattended; paused until proven
-        cron: "23 * * * *"
-        enabled_by_default: false
+      - type: api                       # event-driven wake
+
+  # Seat 2 -- document-touching comms seat; exercises the connector/least-privilege layer.
+  - name: holly
+    role: comms
+    source_seat: Holly
+    model: claude-sonnet-5
+    memory_owner: true
+    connectors:
+      # Least privilege: comms needs a messaging channel and to READ fleet docs/board.
+      # write_scope gates what provision will allow (sandbox|read|none during parallel
+      # build; a live-write connector is a separate gated decision, never auto-granted).
+      - id: telegram
+        write_scope: sandbox            # message only its own test chat during build
+      - id: notion
+        write_scope: read               # read the Decision Board; no live write in build
+    triggers:
+      - type: api                       # event-driven; woken to do comms work

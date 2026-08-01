@@ -1,0 +1,66 @@
+{
+  "fleet": {
+    "environment": {
+      "custom_allowed_domains": [],
+      "name": "fleet-default",
+      "network_access": "trusted",
+      "required_env_vars": []
+    },
+    "memory_reconcile": {
+      "cadence": "hourly",
+      "enabled": true,
+      "merge_strategy": "path-scoped-three-way"
+    },
+    "repo": {
+      "allow_unrestricted_branch_pushes": false,
+      "default_branch": "main",
+      "name": "datavation-fleet",
+      "owner": "Datavation",
+      "visibility": "private"
+    },
+    "wake_model": "event-driven"
+  },
+  "org": {
+    "name": "Datavation",
+    "repo_name": "datavation-fleet",
+    "repo_owner": "Datavation"
+  },
+  "schema_version": "0.1",
+  "seats": [
+    {
+      "connectors": [],
+      "memory_owner": true,
+      "model": "claude-opus-4-8",
+      "name": "cody",
+      "role": "builder",
+      "source_seat": "Cody",
+      "triggers": [
+        {
+          "type": "api"
+        }
+      ]
+    },
+    {
+      "connectors": [
+        {
+          "id": "telegram",
+          "write_scope": "sandbox"
+        },
+        {
+          "id": "notion",
+          "write_scope": "read"
+        }
+      ],
+      "memory_owner": true,
+      "model": "claude-sonnet-5",
+      "name": "holly",
+      "role": "comms",
+      "source_seat": "Holly",
+      "triggers": [
+        {
+          "type": "api"
+        }
+      ]
+    }
+  ]
+}
