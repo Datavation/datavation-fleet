@@ -1,0 +1,38 @@
+{
+  "artefacts": [
+    {
+      "kind": "reply",
+      "path_or_url": "reports/reply-rv-20260802T120331Z-587a11.md"
+    }
+  ],
+  "cost": {
+    "cap_consuming": true,
+    "tokens_in": null,
+    "tokens_out": null,
+    "usd": null
+  },
+  "elapsed_sec": 0.306,
+  "ended_at": "2026-08-02T12:03:32+00:00",
+  "failure_reason": null,
+  "fired_by": null,
+  "instruction": "Coordinate: review the newest open report",
+  "notes": "Replied to report co-20260802T115325Z-802949.",
+  "outcome": "pass",
+  "run_id": "rv-20260802T120331Z-587a11",
+  "schema_version": "0.1",
+  "seat": "marshall",
+  "started_at": "2026-08-02T12:03:31+00:00",
+  "trigger": "api",
+  "verification": {
+    "checks": [
+      {
+        "detail": "answering co-20260802T115325Z-802949",
+        "name": "read the open report with a tool",
+        "passed": true
+      }
+    ],
+    "result": "pass",
+    "rubric_id": "coordinate-v0",
+    "self_checked": true
+  }
+}
