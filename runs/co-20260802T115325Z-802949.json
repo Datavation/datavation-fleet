@@ -1,0 +1,38 @@
+{
+  "artefacts": [
+    {
+      "kind": "report",
+      "path_or_url": "reports/report-co-20260802T115325Z-802949.md"
+    }
+  ],
+  "cost": {
+    "cap_consuming": true,
+    "tokens_in": null,
+    "tokens_out": null,
+    "usd": null
+  },
+  "elapsed_sec": 0.004,
+  "ended_at": "2026-08-02T11:53:25+00:00",
+  "failure_reason": null,
+  "fired_by": null,
+  "instruction": "Coordinate: do a task and file a report for marshall",
+  "notes": "Report filed for marshall; awaiting reply.",
+  "outcome": "pass",
+  "run_id": "co-20260802T115325Z-802949",
+  "schema_version": "0.1",
+  "seat": "holly",
+  "started_at": "2026-08-02T11:53:25+00:00",
+  "trigger": "api",
+  "verification": {
+    "checks": [
+      {
+        "detail": "72 files",
+        "name": "counted repo files with a tool",
+        "passed": true
+      }
+    ],
+    "result": "pass",
+    "rubric_id": "coordinate-v0",
+    "self_checked": true
+  }
+}
