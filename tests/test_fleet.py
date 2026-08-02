@@ -90,6 +90,32 @@ def t_coordinate_holly_hands_marshall():
                 os.remove(f)
 
 
+def t_coordinate_review_reads_across_claude_branches():
+    """The cloud reality: the report is committed to the SENDER's claude/ branch, and the
+    reviewer clones main -- so review must read across branches, not just the local dir."""
+    import importlib
+    d = tempfile.mkdtemp()
+    _git(d, "init", "-b", "main"); _git(d, "config", "user.email", "t@t"); _git(d, "config", "user.name", "t")
+    os.makedirs(os.path.join(d, "reports"))
+    open(os.path.join(d, "reports", ".gitkeep"), "w").write("")
+    _git(d, "add", "-A"); _git(d, "commit", "-m", "base")
+    # Holly files a report on HER branch (not main), addressed to marshall
+    _git(d, "checkout", "-b", "claude/holly1")
+    open(os.path.join(d, "reports", "report-r1.md"), "w").write("# Report from holly -> marshall\n\n- task: do X\n")
+    _git(d, "add", "-A"); _git(d, "commit", "-m", "holly files")
+    # Marshall is on main (no report in his checkout) -- must find it across branches.
+    _git(d, "checkout", "main")
+    # simulate an 'origin' so origin/claude/holly1 exists (review scans origin/claude/*)
+    bare = tempfile.mkdtemp()
+    _git(d, "clone", "--bare", "-q", d, bare) if False else None
+    _git(d, "remote", "add", "origin", d)          # self-remote: origin/* mirrors local branches
+    _git(d, "fetch", "origin", "--quiet")
+    sys.path.insert(0, d); import coordinate as c2; importlib.reload(c2); c2.ROOT = d; c2.REPORTS = os.path.join(d, "reports")
+    open_reports = c2.gather_open_reports("marshall")
+    ids = [rid for rid, frm, _ in open_reports]
+    assert "r1" in ids, "review did not find Holly's report on her claude/ branch: %s" % ids
+
+
 # -- client-agnostic IaC + gates ------------------------------------------
 
 def t_iac_is_client_agnostic():

@@ -90,27 +90,77 @@ def _answered_ids():
     return answered
 
 
+def _git(*args):
+    r = subprocess.run(["git", "-C", ROOT] + list(args), capture_output=True, text=True)
+    return r.stdout if r.returncode == 0 else ""
+
+
+def _report_target(content):
+    """'# Report from holly -> marshall' -> ('holly', 'marshall')."""
+    for line in content.splitlines():
+        if line.startswith("# Report from"):
+            body = line[len("# Report from"):].strip()
+            if "->" in body:
+                a, b = body.split("->", 1)
+                return a.strip(), b.strip()
+    return None, None
+
+
+def gather_open_reports(me):
+    """Every report addressed to `me` and not yet answered, from the LOCAL checkout AND
+    across every origin/claude/* branch. This is the fix for the cloud reality: a seat
+    commits its report to its OWN claude/ branch (push restriction), so the reviewer --
+    which clones main -- must read the other branches to see work handed to it.
+
+    Returns list of (report_id, from_author, content), newest-id last."""
+    _git("fetch", "origin", "--quiet")
+    seen, answered, open_reports = {}, set(), {}
+
+    def ingest(name, content):
+        if name.startswith("report-") and name.endswith(".md"):
+            rid = name[len("report-"):-3]
+            frm, to = _report_target(content)
+            if to == me:
+                seen[rid] = (frm, content)
+        elif name.startswith("reply-") and name.endswith(".md"):
+            for line in content.splitlines():
+                if line.startswith("- answers_report:"):
+                    answered.add(line.split(":", 1)[1].strip())
+
+    # local checkout
+    if os.path.isdir(REPORTS):
+        for p in glob.glob(os.path.join(REPORTS, "*.md")):
+            ingest(os.path.basename(p), open(p, encoding="utf-8").read())
+    # every claude/ branch
+    for b in [x.strip() for x in _git("branch", "-r", "--format=%(refname:short)").splitlines()
+              if x.strip().startswith("origin/claude/")]:
+        for name in [n.strip() for n in _git("ls-tree", "--name-only", "%s:reports" % b).splitlines()
+                     if n.strip().endswith(".md")]:
+            ingest(name, _git("show", "%s:reports/%s" % (b, name)))
+
+    for rid, (frm, content) in seen.items():
+        if rid not in answered:
+            open_reports[rid] = (frm, content)
+    return [(rid, frm, content) for rid, (frm, content) in sorted(open_reports.items())]
+
+
 def do_review(author, runs_dir):
     os.makedirs(REPORTS, exist_ok=True)
     run_id = _run_id("rv")
     rec = runrecord.RunRecord(run_id, author, "api", "Coordinate: review the newest open report",
                               cap_consuming=True)
-    reports = sorted(glob.glob(os.path.join(REPORTS, "report-*.md")))
-    answered = _answered_ids()
-    open_reports = [p for p in reports
-                    if os.path.basename(p)[len("report-"):-3] not in answered]
+    open_reports = gather_open_reports(author)
     if not open_reports:
-        rec.add_check("scanned reports/ for open reports", True, detail="none open", tool_used=True)
+        rec.add_check("scanned local + claude/ branches for reports addressed to me", True,
+                      detail="none open", tool_used=True)
         rec.set_verification("pass", rubric_id="coordinate-v0")
         rec.close("parked", failure_reason="no open report to review -- nothing to do, parked cleanly")
         rec.write(runs_dir)
         print("no open report -- parked (not a failure).")
         return 0
 
-    target = open_reports[-1]
-    report_id = os.path.basename(target)[len("report-"):-3]
-    src = open(target, encoding="utf-8").read()
-    author_line = next((l for l in src.splitlines() if l.startswith("# Report from")), "")
+    report_id, from_author, src = open_reports[-1]
+    author_line = "# Report from %s" % from_author
     rec.add_check("read the open report with a tool", True,
                   detail="answering %s" % report_id, tool_used=True)
 
