@@ -31,10 +31,14 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seat", default=os.environ.get("SEAT", "cody"))
     ap.add_argument("--runs-dir", default=os.path.join(ROOT, "runs"))
+    ap.add_argument("--trigger", default=os.environ.get("ROUTINE_TRIGGER", "api"),
+                    help="how this run was woken: 'schedule' for an autonomous cron fire, "
+                         "'api' for a manual/Run-now fire. The AUTHORITATIVE proof of autonomy is "
+                         "the console run-history (trigger=Schedule, no user); this corroborates it.")
     args = ap.parse_args()
     seat = args.seat
 
-    rec = runrecord.RunRecord(_run_id(seat), seat, "api",
+    rec = runrecord.RunRecord(_run_id(seat), seat, args.trigger,
                               "Boot check: prove this seat booted from the repo, not local disk",
                               cap_consuming=True)
 
