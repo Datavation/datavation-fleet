@@ -71,5 +71,22 @@ seats:
         write_scope: sandbox            # message only its own test chat during build
       - id: notion
         write_scope: read               # read the Decision Board; no live write in build
+    reports_to: marshall                # UAT-3: Holly hands Marshall a task via the repo bus
     triggers:
       - type: api                       # event-driven; woken to do comms work
+
+  # Seat 3 -- Marshall (TP Group workflow); the counterpart Holly hands work to (UAT-3).
+  - name: marshall
+    role: coordinator
+    source_seat: Marshall
+    model: claude-opus-4-8
+    memory_owner: true
+    reviews_reports: true               # reads reports/ filed for it, produces the artefact
+    connectors:
+      - id: google-drive
+        write_scope: read               # read TP Group data during the build
+    triggers:
+      - type: api
+      - type: schedule                  # its own cycle to pick up handed-off work
+        cron: "41 * * * *"
+        enabled_by_default: false

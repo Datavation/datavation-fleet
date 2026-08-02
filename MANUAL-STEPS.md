@@ -25,4 +25,14 @@ For each seat, in claude.ai/code/routines > New routine > Cloud:
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api (event-driven wake)
 
+## 3. Routine `marshall`
+    Name:        marshall
+    Model:       claude-opus-4-8
+    Prompt:      paste agents/marshall/CLAUDE.md
+    Repository:  Datavation/datavation-fleet (default branch)
+    Environment: fleet-default
+    Connectors:  google-drive (read)
+    Permissions: leave 'Allow unrestricted branch pushes' OFF.
+    Triggers:    api, schedule (event-driven wake)
+
 Then: `python verify.py`.

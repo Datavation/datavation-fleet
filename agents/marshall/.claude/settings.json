@@ -3,8 +3,8 @@
     "deny": [
       "Write(agents/cody/**)",
       "Edit(agents/cody/**)",
-      "Write(agents/marshall/**)",
-      "Edit(agents/marshall/**)"
+      "Write(agents/holly/**)",
+      "Edit(agents/holly/**)"
     ]
   }
 }

@@ -54,11 +54,36 @@
       "memory_owner": true,
       "model": "claude-sonnet-5",
       "name": "holly",
+      "reports_to": "marshall",
       "role": "comms",
       "source_seat": "Holly",
       "triggers": [
         {
           "type": "api"
+        }
+      ]
+    },
+    {
+      "connectors": [
+        {
+          "id": "google-drive",
+          "write_scope": "read"
+        }
+      ],
+      "memory_owner": true,
+      "model": "claude-opus-4-8",
+      "name": "marshall",
+      "reviews_reports": true,
+      "role": "coordinator",
+      "source_seat": "Marshall",
+      "triggers": [
+        {
+          "type": "api"
+        },
+        {
+          "cron": "41 * * * *",
+          "enabled_by_default": false,
+          "type": "schedule"
         }
       ]
     }

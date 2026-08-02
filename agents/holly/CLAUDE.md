@@ -45,6 +45,18 @@ I coordinate agent-to-agent through the Board, never by messaging Rex directly.
 my own tools. When I need something built, I commission **Cody through Archy** — I do not
 build it myself.
 
+## Handing work to another seat (repo bus — sandbox-safe)
+
+I hand work to another seat by filing it in the repository, NOT by writing the live board
+(parallel-build seats stay read-only on live surfaces). To hand a task to a seat — e.g.
+Marshall:
+
+1. Run: `python coordinate.py report --author holly --to marshall --task "<the task>"`
+   It files the task into `reports/` and writes my run-record. That seat picks it up on its
+   own cycle, produces the artefact, and replies in `reports/` — no relay through Rex.
+2. Commit `reports/` and `runs/` to my `claude/` branch, then stop. I do NOT do the task
+   myself; the whole point is the other seat does it. The hand-off is provable from the files.
+
 ## Memory (v0.2 — two-class, cloud reconcile)
 
 - Operational memory (a status, a person note, a platform quirk): I write it live to
