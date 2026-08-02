@@ -1,0 +1,43 @@
+{
+  "artefacts": [],
+  "cost": {
+    "cap_consuming": true,
+    "tokens_in": null,
+    "tokens_out": null,
+    "usd": null
+  },
+  "elapsed_sec": 0.002,
+  "ended_at": "2026-08-02T13:18:57+00:00",
+  "failure_reason": null,
+  "fired_by": null,
+  "instruction": "Boot check: prove this seat booted from the repo, not local disk",
+  "notes": "Seat cody booted from the repo (identity + memory read from GitHub, running in a cloud clone). PC-independent.",
+  "outcome": "pass",
+  "run_id": "boot-cody-20260802T131857Z-17603c",
+  "schema_version": "0.1",
+  "seat": "cody",
+  "started_at": "2026-08-02T13:18:57+00:00",
+  "trigger": "schedule",
+  "verification": {
+    "checks": [
+      {
+        "detail": "4564 bytes",
+        "name": "read agents/cody/CLAUDE.md from the repo",
+        "passed": true
+      },
+      {
+        "detail": "208 bytes",
+        "name": "read agents/cody/MEMORY.md from the repo",
+        "passed": true
+      },
+      {
+        "detail": "HEAD 68f2e687a47e",
+        "name": "confirm running inside the cloned repo",
+        "passed": true
+      }
+    ],
+    "result": "pass",
+    "rubric_id": "bootcheck-v0",
+    "self_checked": true
+  }
+}
