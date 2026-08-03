@@ -49,7 +49,7 @@ _HEALTH = [
 # Personal employment / job-hunt (distinct from fleet role changes).
 _EMPLOYMENT = [
     r"\b(?:interview|rejection|recruiter|redundan|got the job|didn'?t get)\b",
-    r"\brésumé\b", r"\bCV tailoring\b",   # bare "resume" dropped -- matches the --resume CLI flag
+    r"\brésumé\b",   # "resume" (CLI flag) and "CV tailoring" (a capability/service name) dropped
 ]
 # First-person emotional / private-life notes.
 _EMOTIONAL = [

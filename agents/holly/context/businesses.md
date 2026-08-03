@@ -8,7 +8,7 @@
 - **Invoicing:** Monzo Business
 - **Key clients:** TPG/Equans (Jack Darby @ TPG; Tonia Weller, Gary Wenlock, Bradley Anderson, Tony Kelly @ Equans), AHS (Iain Jack, diary via Laura Chown-Hammond), ECC (Dan Keen + Peta Keen), residential (Vicky Davies-Jones)
 - **Field ops:** Austen is the sole operative. Jobs booked via Google Calendar. TPG sends jobs in advance.
-- **Current role:** Primary income during career transition (~£1,000/week target). Also serves as automation testbed and Datavation proof of concept.
+- **Current role:** Primary income during the career transition. Also serves as automation testbed and Datavation proof of concept. *(Income targets are personal — see `${personal_store}` career.md.)*
 
 *See `context/rex.md` for full operational detail — clients, rates, automation, platform design.*
 
@@ -35,15 +35,14 @@
 ### Current Status
 - **BD focus:** SMB consulting (BYO-AI / Chowa Method engagements), law firms (local), outside IR35 contract roles
 - **Live SMB client:** TPG — Datavation Discovery Report delivered May 2025; Balance to Action model in development
-- **Live pipeline:** Kennedys Reporting Lead (global law firm, insurance/litigation, London/Chelmsford — recruiter: Jamal)
+- **Live pipeline:** Kennedys Reporting Lead (global law firm, insurance/litigation, London/Chelmsford)
 - **Current reality:** Low commercial traction. Datavation is the strategic future; Rex is the current income source.
 - **Also provides:** Digital operations services to Rex (automation, reporting, platform design)
 
 ### Career Targets (Austen King personal brand)
-- **Target roles:** Chief Data Officer, Director of Data & AI, Head of Data Platform, Principal Transformation Leader
-- **Target salary:** £100k–£140k or £600–£1,000/day contract
-- **Financial goal:** £30k–£50k/year pension contributions; retire at ~60–61
-- **Target sectors:** Financial services, legal, professional services, regulated industries
+*Personal-career detail is HELD — it lives in the personal store
+(`${personal_store}` → agents/holly/context/career.md), referenced at runtime, not in this repo.
+This file keeps business content only.*
 
 ---
 
