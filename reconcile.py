@@ -107,12 +107,25 @@ def screen_personal(branch, statuses):
     return promotable, quarantined
 
 
-def apply_merges(branch, promotable, own_seat):
-    """Promote ONLY the screened-clean paths to main. `promotable` comes from screen_personal --
-    quarantined paths never reach here, so personal-class memory cannot land on shared main."""
+def apply_merges(branch, promotable, own_seat, target=None):
+    """Promote ONLY the screened-clean paths onto `target` (a branch created/reset from main).
+    `promotable` comes from screen_personal -- quarantined paths never reach here, so personal-class
+    memory cannot land on shared main.
+
+    target defaults to main (local/tests: commit straight to main). The CI job passes a reconcile
+    branch instead, so the promotion lands on a branch and reaches main only via an auto-merged PR
+    (Archy ruling 2026-08-03, condition-b design B -- no branch-protection bypass, full audit trail)."""
+    target = target or MAIN
     if not promotable:
         return 0
-    git("checkout", MAIN)
+    # Switch to target; create it from main only the FIRST time (so promotions from multiple seats
+    # ACCUMULATE on one reconcile branch instead of each `-B` reset wiping the last).
+    exists = subprocess.run(["git", "-C", ROOT, "rev-parse", "--verify", target],
+                            capture_output=True, text=True).returncode == 0
+    if exists:
+        git("checkout", target)
+    else:
+        git("checkout", "-b", target, MAIN)
     for path in promotable:
         content = _show(branch, path)
         full = os.path.join(ROOT, path)
@@ -124,7 +137,7 @@ def apply_merges(branch, promotable, own_seat):
     return len(promotable)
 
 
-def do_branch(branch, apply=False):
+def do_branch(branch, apply=False, target=None):
     part, own_seat, ambiguous, statuses = analyse(branch)
     report, has_findings = audit_report(branch, own_seat, ambiguous, part, statuses)
 
@@ -140,9 +153,9 @@ def do_branch(branch, apply=False):
 
     print(report)
     if apply and not ambiguous:
-        n = apply_merges(branch, promotable, own_seat)
+        n = apply_merges(branch, promotable, own_seat, target=target)
         if n:
-            print(">> merged %d clean memory path(s) to main." % n)
+            print(">> merged %d clean memory path(s) onto %s." % (n, target or MAIN))
         if quarantined:
             print(">> QUARANTINED %d personal-class path(s) -- NOT promoted:" % len(quarantined))
             for path, summ in quarantined:
@@ -167,6 +180,10 @@ def main():
     ap.add_argument("--branch")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--target-branch", default=None,
+                    help="commit promotions onto this branch (created from main) instead of main "
+                         "itself. The CI job passes a reconcile branch so main is reached only via an "
+                         "auto-merged PR. Omit for local/direct-to-main use.")
     args = ap.parse_args()
 
     git("fetch", "origin", "--quiet", check=False)
@@ -177,7 +194,7 @@ def main():
         return 0
     rc = 0
     for b in ([args.branch] if args.branch else claude_branches()):
-        rc |= do_branch(b, apply=args.apply)
+        rc |= do_branch(b, apply=args.apply, target=args.target_branch)
     return rc
 
 

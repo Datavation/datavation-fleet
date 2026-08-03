@@ -2,16 +2,18 @@
 # memory from its claude/* branch to main (path-scoped policy in lib/reconcile.py).
 #
 # WHY THIS IS A GITHUB ACTION AND NOT A SEAT ROUTINE (design note for Archy):
-#   The control gate restricts seat routines to pushing claude/* branches only
-#   (allow_unrestricted_branch_pushes: false). But reconcile must land memory on MAIN.
-#   A sandboxed seat therefore CANNOT be the reconcile actor. CI is the correct trusted
-#   actor: it has contents:write, runs on a schedule, and is separate from the seats it
-#   serves. This establishes exactly ONE main-writer (this workflow) distinct from every
-#   claude/*-only seat -- a tightening of the governance story, not a loosening. Flagged
-#   to Archy for ratification; the policy it enforces is already his ruling.
+#   The control gate restricts seat routines to pushing claude/* branches only. But memory
+#   must land on MAIN. A sandboxed seat cannot be the reconcile actor; CI is the one trusted
+#   actor. This establishes exactly ONE main-writer distinct from every claude/*-only seat.
 #
-# It NEVER clobbers: three-way merge, refuses canon/cross-seat/identity/context, surfaces
-# conflicts to reports/MEMORY-AUDIT-*.md and fails loud instead of silently overwriting.
+# CONDITION (b), design B (Archy ruling 2026-08-03): reconcile does NOT push main directly.
+#   It commits promotions onto a reconcile branch and reaches main ONLY via an auto-merged PR.
+#   So branch protection can apply UNIFORMLY to main with NO bypass exception -- and every memory
+#   promotion becomes a logged, diffable PR (fits the Memory architecture's "nothing changes
+#   invisibly" principle). The push-restriction + path-scoped policy + personal-data guard all hold.
+#
+# It NEVER clobbers: three-way merge, refuses canon/cross-seat/identity/context, quarantines
+# personal-class content (lib/personal_scan.py), and fails loud instead of overwriting.
 
 name: memory-reconcile
 
@@ -22,10 +24,14 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write         # open + merge the reconcile PR
 
 concurrency:
-  group: memory-reconcile      # never two reconciles racing on main
+  group: memory-reconcile      # never two reconciles racing
   cancel-in-progress: false
+
+env:
+  RECON_BRANCH: reconcile/auto
 
 jobs:
   reconcile:
@@ -36,11 +42,8 @@ jobs:
         with:
           ref: main
           fetch-depth: 0        # full history so merge-base works
-          # Condition (c) (Archy 2026-08-02): the push below uses this checkout's persisted
-          # credential = the workflow's OWN ephemeral GITHUB_TOKEN (permissions: contents:write
-          # above), NEVER any seat's PAT. No seat credential is referenced anywhere in this file.
-          # Condition (b) -- branch protection enforcing "only this CI token writes main; every
-          # seat/PAT is claude/*-only" -- is a repo-settings task, evidenced separately (queued).
+          # Condition (c): the git/gh operations use this checkout's persisted credential = the
+          # workflow's OWN ephemeral GITHUB_TOKEN (permissions above), NEVER any seat's PAT.
 
       - name: Fetch all claude/* branches
         run: git fetch origin "+refs/heads/claude/*:refs/remotes/origin/claude/*"
@@ -50,23 +53,42 @@ jobs:
           git config user.name "fleet-memory-reconcile"
           git config user.email "reconcile@datavation.local"
 
-      - name: Reconcile own operational memory to main
+      - name: Reconcile own operational memory onto the reconcile branch
         id: reconcile
-        continue-on-error: true   # findings must not abort the push of the clean merges
-        run: python reconcile.py --all --apply
+        continue-on-error: true   # quarantine/conflict findings must not abort a clean promotion
+        run: python reconcile.py --all --apply --target-branch "$RECON_BRANCH"
 
-      - name: Commit any audit findings
+      - name: Ensure reconcile branch exists; fold in any audit findings
         run: |
+          git rev-parse --verify "$RECON_BRANCH" >/dev/null 2>&1 || git checkout -B "$RECON_BRANCH" main
+          git checkout "$RECON_BRANCH"
           if [ -n "$(git status --porcelain reports/)" ]; then
             git add reports/
-            git commit -m "memory reconcile: audit findings ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git commit -m "memory reconcile: audit findings"
           fi
 
-      - name: Push main
-        run: git push origin main
+      - name: Open + merge PR if there is anything to promote (no bypass)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          AHEAD=$(git rev-list --count "main..$RECON_BRANCH" 2>/dev/null || echo 0)
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "Nothing to promote -- no PR this run."
+            exit 0
+          fi
+          git push -f origin "$RECON_BRANCH"
+          gh pr create --base main --head "$RECON_BRANCH" \
+            --title "memory reconcile" \
+            --body "Automated promotion of seats' own operational memory ($AHEAD commit(s)). Path-scoped + personal-data guarded. Nothing changes invisibly." \
+            2>/dev/null || echo "PR already open."
+          # Merge the PR (NOT --admin: no protection bypass). Requires the ruleset to need 0
+          # approvals; the token may merge its own PR. Enable auto-merge as a fallback if a
+          # required check is pending.
+          gh pr merge "$RECON_BRANCH" --squash --delete-branch \
+            || gh pr merge "$RECON_BRANCH" --squash --auto --delete-branch
 
-      - name: Fail loud if reconcile surfaced refused paths or conflicts
+      - name: Fail loud if reconcile surfaced refused/quarantined paths or conflicts
         if: steps.reconcile.outcome == 'failure'
         run: |
-          echo "::error::reconcile surfaced refused paths or conflicts -- see reports/MEMORY-AUDIT-*.md on main"
+          echo "::error::reconcile surfaced refused/quarantined paths or conflicts -- see reports/ on the PR"
           exit 1
