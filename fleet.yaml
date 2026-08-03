@@ -125,6 +125,20 @@ seats:
         cron: "23 7 * * 1"              # Mondays 07:23 -- weekly finance review
         enabled_by_default: false
 
+  # Seat 6 -- Dex, the CDO digital twin. Reads a personal knowledge vault (three-tier split:
+  # engine CODE in Git, vault DATA never in Git, reached read-only at runtime). Read-only over
+  # the vault + wiki; proposes intake, never writes it. NO write/money/send.
+  - name: dex
+    role: cdo
+    source_seat: Dex
+    model: claude-opus-4-8
+    memory_owner: true
+    connectors:
+      - id: google-drive
+        write_scope: read               # read-only vault/corpus reference (Knowledge Map + nodes)
+    triggers:
+      - type: api
+
 # Utility routines (NOT seats): scheduled/ops routines a seat owns. Provisioned into the same
 # console runbook with the SAME least-privilege rule as seats. cody-heartbeat is the UAT-2
 # autonomous boot-proof: it runs bootcheck.py and commits a run-record -- so it needs NOTHING.

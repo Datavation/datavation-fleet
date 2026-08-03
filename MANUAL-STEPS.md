@@ -95,7 +95,24 @@ In claude.ai/code/routines > New routine > Cloud:
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api, schedule (event-driven wake)
 
-## 6. Routine `cody-heartbeat`  -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)
+## 6. Routine `dex`
+    Name:        dex
+    Model:       claude-opus-4-8
+    Prompt:      paste agents/dex/CLAUDE.md
+    Repository:  Datavation/datavation-fleet (default branch)
+    Environment: fleet-default
+    Connectors:  REMOVE ALL, then add back ONLY: google-drive (read)
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { google-drive (read) }; and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
+    Permissions: leave 'Allow unrestricted branch pushes' OFF.
+    Triggers:    api (event-driven wake)
+
+## 7. Routine `cody-heartbeat`  -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)
     Name:        cody-heartbeat
     Model:       claude-opus-4-8
     Prompt:      ops routine owned by seat 'cody' -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)

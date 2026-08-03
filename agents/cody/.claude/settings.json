@@ -9,6 +9,8 @@
       "Edit(agents/tessa/**)",
       "Write(agents/quinn/**)",
       "Edit(agents/quinn/**)",
+      "Write(agents/dex/**)",
+      "Edit(agents/dex/**)",
       "mcp__*"
     ]
   }

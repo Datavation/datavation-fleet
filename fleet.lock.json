@@ -127,6 +127,24 @@
           "type": "schedule"
         }
       ]
+    },
+    {
+      "connectors": [
+        {
+          "id": "google-drive",
+          "write_scope": "read"
+        }
+      ],
+      "memory_owner": true,
+      "model": "claude-opus-4-8",
+      "name": "dex",
+      "role": "cdo",
+      "source_seat": "Dex",
+      "triggers": [
+        {
+          "type": "api"
+        }
+      ]
     }
   ],
   "utility_routines": [
