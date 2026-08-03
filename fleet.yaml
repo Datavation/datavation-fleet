@@ -15,6 +15,13 @@ org:
   name: Datavation                      # display name of the org this fleet serves
   repo_owner: Datavation                # GitHub owner/org for the repo
   repo_name: datavation-fleet           # repo name
+  # The PERSONAL STORE (Option B, Rex/Archy 2026-08-03): a SEPARATE private repo holding this
+  # deployment's personal-class data (finances/family/career/private memory). Referenced at
+  # runtime via ${org.personal_store_repo}; NEVER merged into this repo; swapped per deployment
+  # (a client gets their own). Access is a fine-grained token set by the human as a secret named
+  # by personal_store_token_secret -- never committed, never pasted to an agent.
+  personal_store_repo: Datavation/datavation-fleet-personal
+  personal_store_token_secret: PERSONAL_STORE_TOKEN
   # Connector *accounts* are chosen per seat below by connector id; the actual account
   # identity is bound at deploy time via OAuth in the cloud environment, not here.
 
