@@ -30,13 +30,15 @@ _MONEY = [
     r"\b(?:my|his|her|personal|household|family) finances\b",
     r"\bbank statement\b",
 ]
-# Family / relationships / home life. Bare "family" is dropped -- too many technical uses
-# ("model family", "product family"); require a possessive or an explicit relation word.
+# Family / relationships / home life. Bare "family" dropped (technical "model family"); and
+# "partner" (business partner), "separation" (routing/data separation), "children" (tree/docket
+# children) dropped -- too many technical uses. Spouse/kin terms + possessive "family" cover the
+# real signal.
 _FAMILY = [
-    r"\b(?:wife|husband|spouse|partner|fianc)\b",
-    r"\b(?:daughter|son|children|kids|newborn)\b",
-    r"\b(?:married|divorce|separation|widow)\b",
-    r"\b(?:my|his|her|the) family\b", r"\bfamily member\b",
+    r"\b(?:wife|husband|spouse|fianc)\b",
+    r"\b(?:daughter|son|kids|newborn)\b",
+    r"\b(?:married|divorce|widow)\b",
+    r"\b(?:my|his|her) family\b", r"\bfamily member\b",
 ]
 # Health / medical / mental state. "breakdown" dropped (cost/task breakdown is technical).
 _HEALTH = [
@@ -47,7 +49,7 @@ _HEALTH = [
 # Personal employment / job-hunt (distinct from fleet role changes).
 _EMPLOYMENT = [
     r"\b(?:interview|rejection|recruiter|redundan|got the job|didn'?t get)\b",
-    r"\b(?:CV|résumé|resume)\b",
+    r"\brésumé\b", r"\bCV tailoring\b",   # bare "resume" dropped -- matches the --resume CLI flag
 ]
 # First-person emotional / private-life notes.
 _EMOTIONAL = [

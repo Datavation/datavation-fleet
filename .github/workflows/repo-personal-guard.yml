@@ -1,0 +1,34 @@
+# repo-personal-guard -- enforcement point 2 of the Option-B personal-data model (Archy 2026-08-03).
+# Turns "the shareable repo contains NO personal data" into a GREEN CHECK, not a promise -- the
+# provable property behind the client-fleet productisation, and the thing we'd show a client.
+#
+# It scans the seat memory + context layer (where Austen's private data would leak) and FAILS if
+# any personal-class content is present. Finance-engine code, canon IP, and synthetic fixtures are
+# out of scope (reviewed IP, not a leak vector); HELD placeholders are skipped (they reference the
+# personal store, they hold no data); a small human-reviewed allowlist covers benign technical hits.
+#
+# EXPECTED RED until staging: it currently finds genuine personal-career content (Holly's
+# businesses.md salary targets + recruiter, agents.md CV-tailoring) that Option B moves to the
+# personal store. It goes GREEN once that content is staged to ${personal_store} + placeholdered.
+
+name: repo-personal-guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Repo-wide personal-data guard
+        run: python scan_repo.py
