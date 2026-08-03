@@ -37,6 +37,17 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 # a LIVE production surface is never auto-granted -- it is a separate gated decision.
 ALLOWED_WRITE_SCOPES = {"none", "read", "sandbox"}
 
+# Connector *classes* NO build seat may hold, whatever its write_scope: money movement and
+# live outbound comms on Rex's real accounts. The console attaches all org connectors by
+# default (there is NO management API to prevent it -- same platform gate as T8), so this is
+# the code lever we DO control: fleet.yaml may never DECLARE one of these, and the console
+# runbook forces their removal + a verify step. (2026-08-02: added after a heartbeat routine
+# was found holding Stripe + Gmail on Rex's live account -- exactly this blast radius.)
+FORBIDDEN_BUILD_CONNECTOR_IDS = {
+    "stripe", "paypal", "square", "quickbooks", "docusign",  # money / contracts
+    "gmail", "ms365", "outlook",                             # live outbound email
+}
+
 
 class ProvisionError(Exception):
     pass
@@ -75,17 +86,26 @@ def resolve_inputs(cfg):
 
 def check_connector_gate(cfg):
     bad = []
-    for seat in cfg["seats"]:
-        for conn in seat.get("connectors") or []:
+    # Seats AND utility routines are both gated -- a scheduled ops routine can hold connectors
+    # too (that is how the flagged heartbeat happened), so it gets the same scrutiny.
+    holders = [("seat", s) for s in cfg["seats"]] + \
+              [("utility-routine", u) for u in cfg.get("utility_routines") or []]
+    for kind, holder in holders:
+        for conn in holder.get("connectors") or []:
+            cid = (conn.get("id") or "").lower()
             if conn.get("write_scope") not in ALLOWED_WRITE_SCOPES:
-                bad.append("seat %s connector %s write_scope=%r (allowed: %s)"
-                           % (seat["name"], conn.get("id"), conn.get("write_scope"),
+                bad.append("%s %s connector %s write_scope=%r (allowed: %s)"
+                           % (kind, holder["name"], conn.get("id"), conn.get("write_scope"),
                               ", ".join(sorted(ALLOWED_WRITE_SCOPES))))
+            if cid in FORBIDDEN_BUILD_CONNECTOR_IDS:
+                bad.append("%s %s declares FORBIDDEN connector %r (money/live-comms class -- "
+                           "may never hold it)" % (kind, holder["name"], conn.get("id")))
     if bad:
         raise ProvisionError(
-            "CONNECTOR GATE: a seat asks for a live-write connector -- refusing.\n  "
+            "CONNECTOR GATE: a seat asks for a live-write or forbidden connector -- refusing.\n  "
             + "\n  ".join(bad)
-            + "\nA live-write connector is a separate gated decision, never auto-granted in the build.")
+            + "\nA live-write / money / live-comms connector is a separate gated decision, "
+              "never auto-granted in the build.")
 
 
 # --------------------------------------------------------------------------
@@ -122,12 +142,34 @@ def root_settings(cfg):
     }
 
 
+def connector_deny(seat):
+    """The in-session connector boundary (defense-in-depth, code layer).
+
+    A seat that declares NO connectors must call NO connector tool: deny `mcp__*` outright.
+    That is a certain, reproducible rule and it is exactly the flagged case -- the Cody
+    builder and the cody-heartbeat routine need only the repo + git, so any Gmail/Stripe tool
+    call is denied at the permission layer regardless of what the console attached.
+
+    A seat WITH connectors cannot be allow-listed here from code: the cloud connector tool
+    namespaces are not known at provision time, so we do NOT ship a fabricated glob that might
+    silently fail to match. For those seats the load-bearing control stays the console-minimal
+    set (MANUAL-STEPS + verify), and the provision-time FORBIDDEN gate prevents ever declaring
+    a money/live-comms connector. Same open finding as the write-boundary: whether the cloud
+    runtime honours permissions.deny in an autonomous run is still to be certified; until then
+    NOT-attaching in the console is the primary gate and this is defense-in-depth."""
+    if not (seat.get("connectors") or []):
+        return ["mcp__*"]
+    return []
+
+
 def seat_settings(cfg, seat_name):
-    """Per-seat cross-seat deny: this seat may not write ANY other seat's tree. Written to
-    agents/<seat>/.claude/settings.json, and activated per session by the SessionStart hook
-    (which copies the right one to .claude/settings.local.json based on $SEAT)."""
+    """Per-seat write + connector boundary. Written to agents/<seat>/.claude/settings.json,
+    activated per session by the SessionStart hook (copies it to .claude/settings.local.json
+    based on $SEAT). Denies: (1) writing ANY other seat's tree, (2) all connector tools for a
+    zero-connector seat."""
+    seat = next(s for s in cfg["seats"] if s["name"] == seat_name)
     others = [s["name"] for s in cfg["seats"] if s["name"] != seat_name]
-    deny = _deny(["agents/%s/**" % o for o in others])
+    deny = _deny(["agents/%s/**" % o for o in others]) + connector_deny(seat)
     return {"permissions": {"deny": deny}}
 
 
@@ -168,28 +210,63 @@ def write_if_different(path, content):
     return action
 
 
+def _connector_lines(conns):
+    """The runbook's connector instruction. The console pre-attaches ALL org connectors by
+    default, so every routine's step is REMOVE-ALL-first, then add back ONLY the minimal set,
+    then a mandatory VERIFY (re-open the routine and confirm the list equals exactly this set).
+    Trust-nothing: the verify line is what caught this being wrong the first time."""
+    allowed = ", ".join("%s (%s)" % (c["id"], c["write_scope"]) for c in conns)
+    if not conns:
+        set_txt = "{ } (NONE)"
+        add_txt = "REMOVE ALL. This routine needs no connector -- add nothing back."
+    else:
+        set_txt = "{ %s }" % allowed
+        add_txt = "REMOVE ALL, then add back ONLY: %s" % allowed
+    return [
+        "    Connectors:  %s" % add_txt,
+        "    VERIFY:      re-open the saved routine; its connector list MUST equal exactly %s." % set_txt,
+        "                 The console attaches all org connectors by default -- delete every extra,",
+        "                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).",
+    ]
+
+
 def manual_steps(cfg):
     org = cfg["org"]
     out = ["# MANUAL-STEPS.md -- console runbook (GENERATED, do not hand-edit)", "",
            "Routines, triggers, tokens and connector OAuth have no management API; they are",
            "created in the web console. Generated from fleet.yaml for org **%s**." % org["name"], "",
-           "For each seat, in claude.ai/code/routines > New routine > Cloud:", ""]
+           "> LEAST PRIVILEGE IS NOT OPTIONAL. The New-routine form pre-attaches every org",
+           "> connector. For each routine below you MUST remove all, add back only the listed set,",
+           "> and VERIFY the saved routine matches. A routine silently holding Stripe/Gmail on the",
+           "> real org account is the exact blast-radius failure this runbook exists to prevent.", "",
+           "In claude.ai/code/routines > New routine > Cloud:", ""]
     n = 0
-    for seat in cfg["seats"]:
-        conns = seat.get("connectors") or []
-        conn_txt = ", ".join("%s (%s)" % (c["id"], c["write_scope"]) for c in conns) or \
-                   "REMOVE ALL (least privilege -- this seat needs none)"
+
+    def emit(name, model, prompt_ref, conns, triggers, purpose=None):
+        nonlocal n, out
         n += 1
-        out += ["## %d. Routine `%s`" % (n, seat["name"]),
-                "    Name:        %s" % seat["name"],
-                "    Model:       %s" % seat.get("model", "default"),
-                "    Prompt:      paste agents/%s/CLAUDE.md" % seat["name"],
+        out.append("## %d. Routine `%s`%s" % (n, name, ("  -- %s" % purpose) if purpose else ""))
+        out += ["    Name:        %s" % name,
+                "    Model:       %s" % model,
+                "    Prompt:      %s" % prompt_ref,
                 "    Repository:  %s/%s (default branch)" % (org["repo_owner"], org["repo_name"]),
-                "    Environment: %s" % cfg["fleet"]["environment"]["name"],
-                "    Connectors:  %s" % conn_txt,
-                "    Permissions: leave 'Allow unrestricted branch pushes' OFF.",
-                "    Triggers:    %s (event-driven wake)" % ", ".join(t["type"] for t in seat.get("triggers") or []),
+                "    Environment: %s" % cfg["fleet"]["environment"]["name"]]
+        out += _connector_lines(conns)
+        out += ["    Permissions: leave 'Allow unrestricted branch pushes' OFF.",
+                "    Triggers:    %s (event-driven wake)" % ", ".join(t["type"] for t in triggers or []),
                 ""]
+
+    for seat in cfg["seats"]:
+        emit(seat["name"], seat.get("model", "default"),
+             "paste agents/%s/CLAUDE.md" % seat["name"],
+             seat.get("connectors") or [], seat.get("triggers"))
+
+    for ur in cfg.get("utility_routines") or []:
+        emit(ur["name"], next((s.get("model", "default") for s in cfg["seats"]
+                               if s["name"] == ur.get("owner_seat")), "default"),
+             "ops routine owned by seat '%s' -- %s" % (ur.get("owner_seat"), ur.get("purpose", "")),
+             ur.get("connectors") or [], ur.get("triggers"), purpose=ur.get("purpose"))
+
     out += ["Then: `python verify.py`.", ""]
     return "\n".join(out)
 

@@ -87,5 +87,19 @@
         }
       ]
     }
+  ],
+  "utility_routines": [
+    {
+      "connectors": [],
+      "name": "cody-heartbeat",
+      "owner_seat": "cody",
+      "purpose": "autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)",
+      "triggers": [
+        {
+          "cron": "hourly",
+          "type": "schedule"
+        }
+      ]
+    }
   ]
 }

@@ -90,3 +90,17 @@ seats:
       - type: schedule                  # its own cycle to pick up handed-off work
         cron: "41 * * * *"
         enabled_by_default: false
+
+# Utility routines (NOT seats): scheduled/ops routines a seat owns. Provisioned into the same
+# console runbook with the SAME least-privilege rule as seats. cody-heartbeat is the UAT-2
+# autonomous boot-proof: it runs bootcheck.py and commits a run-record -- so it needs NOTHING.
+# Declaring connectors: [] here makes "zero connectors" a code fact (the runbook forces REMOVE
+# ALL + a verify step), not something I have to remember to strip in the console by hand.
+utility_routines:
+  - name: cody-heartbeat
+    owner_seat: cody
+    purpose: autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)
+    connectors: []                      # NONE -- least privilege; blast radius = zero
+    triggers:
+      - type: schedule
+        cron: hourly

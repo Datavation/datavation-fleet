@@ -150,6 +150,52 @@ def t_write_boundary_generated_per_seat():
                     "%s can write %s's tree" % (seat["name"], other["name"])
 
 
+def t_zero_connector_seat_denies_all_mcp_tools():
+    """The flagged blast radius: a zero-connector seat/routine must be unable to call ANY
+    connector tool. provision generates `mcp__*` into its settings.json deny; a seat WITH
+    connectors must NOT get that blanket deny (it would break its declared connectors)."""
+    cfg = provision.resolve_inputs(provision.load_yaml(os.path.join(ROOT, "fleet.yaml")))
+    by = {s["name"]: s for s in cfg["seats"]}
+    cody_deny = provision.seat_settings(cfg, "cody")["permissions"]["deny"]
+    assert not (by["cody"].get("connectors") or []), "test assumes cody is the zero-connector seat"
+    assert "mcp__*" in cody_deny, "zero-connector seat 'cody' does not deny all connector tools"
+    holly_deny = provision.seat_settings(cfg, "holly")["permissions"]["deny"]
+    assert by["holly"].get("connectors"), "test assumes holly declares connectors"
+    assert "mcp__*" not in holly_deny, "connector-bearing seat 'holly' wrongly blanket-denies mcp__*"
+
+
+def t_forbidden_connector_rejected_by_gate():
+    """No build seat OR utility routine may declare a money/live-comms connector, whatever its
+    write_scope. This is the code lever we DO control (there is no API to stop the console
+    attaching one, so declaring is refused and the runbook forces removal + verify)."""
+    import copy
+    for holder_key in ("seats", "utility_routines"):
+        cfg = copy.deepcopy(provision.resolve_inputs(
+            provision.load_yaml(os.path.join(ROOT, "fleet.yaml"))))
+        cfg.setdefault(holder_key, [])
+        if not cfg[holder_key]:
+            cfg[holder_key].append({"name": "x", "connectors": []})
+        cfg[holder_key][0].setdefault("connectors", []).append(
+            {"id": "stripe", "write_scope": "read"})
+        try:
+            provision.check_connector_gate(cfg)
+        except provision.ProvisionError as e:
+            assert "FORBIDDEN" in str(e), str(e)
+            continue
+        raise AssertionError("a forbidden (stripe) connector was allowed in %s" % holder_key)
+
+
+def t_utility_routine_heartbeat_is_zero_connector():
+    """The exact routine Rex flagged: cody-heartbeat must be declared with NO connectors, so
+    'zero connectors' is a code fact carried into the runbook, not a manual thing to remember."""
+    cfg = provision.resolve_inputs(provision.load_yaml(os.path.join(ROOT, "fleet.yaml")))
+    hb = next((u for u in cfg.get("utility_routines") or [] if u["name"] == "cody-heartbeat"), None)
+    assert hb is not None, "cody-heartbeat is not declared as a utility routine"
+    assert not (hb.get("connectors") or []), "cody-heartbeat must declare zero connectors"
+    steps = provision.manual_steps(cfg)
+    assert "cody-heartbeat" in steps and "REMOVE ALL" in steps, "runbook missing heartbeat REMOVE-ALL step"
+
+
 def main():
     print("FLEET TESTS\n")
     for name, fn in sorted((k[2:].replace("_", " "), v) for k, v in globals().items()

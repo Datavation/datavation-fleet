@@ -4,7 +4,8 @@
       "Write(agents/holly/**)",
       "Edit(agents/holly/**)",
       "Write(agents/marshall/**)",
-      "Edit(agents/marshall/**)"
+      "Edit(agents/marshall/**)",
+      "mcp__*"
     ]
   }
 }
