@@ -150,6 +150,49 @@ def t_write_boundary_generated_per_seat():
                     "%s can write %s's tree" % (seat["name"], other["name"])
 
 
+def t_personal_scan_separates_operational_from_personal():
+    """The guard must PASS legitimate operational memory (Quinn mentions Monzo/mortgage figure-free,
+    Cody says 'Claude 5 family') and FLAG actual personal data (figures, family, health, emotional)."""
+    from lib import personal_scan as ps
+    clean = ["MEM-001: RHS source is Monzo CSV export, not the live QB connector.",
+             "mortgage letters carry no balance; anchor from a statement date.",
+             "Default to the latest Claude 5 family of models."]
+    personal = ["Austen's wife Joanne; ~£35k loss; salary was 105k.",
+                "burnout risk is documented and current.",
+                "his sort code and account number are on file."]
+    for t in clean:
+        assert not ps.is_personal(t), "false positive on operational memory: %r -> %s" % (t, ps.summary(ps.scan(t)))
+    for t in personal:
+        assert ps.is_personal(t), "MISSED personal content: %r" % t
+
+
+def t_personal_memory_quarantined_not_promoted():
+    """End-to-end: a seat writes PERSONAL content to its own memory on its claude/ branch. reconcile
+    must NOT promote it to main -- it is quarantined and reported. This is the guard that stops
+    Austen's private data reaching the shareable repo even if the seat mis-classifies it."""
+    import importlib
+    d = tempfile.mkdtemp()
+    _git(d, "init", "-b", "main"); _git(d, "config", "user.email", "t@t"); _git(d, "config", "user.name", "t")
+    os.makedirs(os.path.join(d, "agents", "hobbs", "memory"))
+    open(os.path.join(d, "agents", "hobbs", "MEMORY.md"), "w").write("# Hobbs memory\n\n- (baseline)\n")
+    _git(d, "add", "-A"); _git(d, "commit", "-m", "base")
+    _git(d, "checkout", "-b", "claude/hobbs1")
+    # personal content the seat should never have self-written, but did:
+    open(os.path.join(d, "agents", "hobbs", "MEMORY.md"), "a").write(
+        "- his wife Joanne and the ~£35k loss weigh on the salary decision\n")
+    _git(d, "add", "-A"); _git(d, "commit", "-m", "leak")
+    sys.path.insert(0, d); import reconcile as r2; importlib.reload(r2); r2.ROOT = d
+    part, seat, amb, statuses = r2.analyse("claude/hobbs1", main_ref="main")
+    promotable, quarantined = r2.screen_personal("claude/hobbs1", statuses)
+    assert not promotable, "personal memory was marked promotable: %s" % promotable
+    assert any("agents/hobbs/MEMORY.md" in p for p, _ in quarantined), "personal path not quarantined"
+    # and apply_merges must refuse to write it to main
+    r2.apply_merges("claude/hobbs1", promotable, seat)
+    _git(d, "checkout", "main")
+    on_main = open(os.path.join(d, "agents", "hobbs", "MEMORY.md")).read()
+    assert "Joanne" not in on_main and "35k" not in on_main, "PERSONAL DATA LEAKED TO MAIN: %r" % on_main
+
+
 def t_zero_connector_seat_denies_all_mcp_tools():
     """The flagged blast radius: a zero-connector seat/routine must be unable to call ANY
     connector tool. provision generates `mcp__*` into its settings.json deny; a seat WITH

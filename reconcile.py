@@ -19,7 +19,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from lib import reconcile as policy  # noqa: E402
+from lib import reconcile as policy        # noqa: E402
+from lib import personal_scan as personal  # noqa: E402  (personal-data guard, Rex 2026-08-03)
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MAIN = "main"
@@ -89,12 +90,30 @@ def audit_report(branch, own_seat, ambiguous, part, statuses):
     return "\n".join(lines), bool(refused or conflicts)
 
 
-def apply_merges(branch, statuses, own_seat):
-    merged = [p for p, s in statuses.items() if s == "mergeable"]
-    if not merged:
+def screen_personal(branch, statuses):
+    """Split the mergeable memory paths into (promotable, quarantined) using the personal-data
+    guard. A path whose content trips any personal-class marker is QUARANTINED -- never promoted
+    to shared main -- and returned with a category-only summary (no sensitive content). This is
+    defense-in-depth on top of the seat's own write-time classification (Rex ruling 2026-08-03)."""
+    promotable, quarantined = [], []
+    for path, status in statuses.items():
+        if status != "mergeable":
+            continue
+        hits = personal.scan(_show(branch, path) or "")
+        if hits:
+            quarantined.append((path, personal.summary(hits)))
+        else:
+            promotable.append(path)
+    return promotable, quarantined
+
+
+def apply_merges(branch, promotable, own_seat):
+    """Promote ONLY the screened-clean paths to main. `promotable` comes from screen_personal --
+    quarantined paths never reach here, so personal-class memory cannot land on shared main."""
+    if not promotable:
         return 0
     git("checkout", MAIN)
-    for path in merged:
+    for path in promotable:
         content = _show(branch, path)
         full = os.path.join(ROOT, path)
         os.makedirs(os.path.dirname(full) or ".", exist_ok=True)
@@ -102,27 +121,44 @@ def apply_merges(branch, statuses, own_seat):
             fh.write(content)
         git("add", path)
     git("commit", "-m", "memory reconcile: %s own operational memory from %s" % (own_seat, branch))
-    return len(merged)
+    return len(promotable)
 
 
 def do_branch(branch, apply=False):
     part, own_seat, ambiguous, statuses = analyse(branch)
     report, has_findings = audit_report(branch, own_seat, ambiguous, part, statuses)
+
+    # Personal-data guard: screen mergeable memory BEFORE any promotion (both dry-run and apply).
+    promotable, quarantined = screen_personal(branch, statuses)
+    if quarantined:
+        qlines = ["## QUARANTINED -- personal-class, NOT promoted to shared main (personal-data guard)",
+                  "*Rex ruling 2026-08-03: personal data never lands on shared main; it stays in the "
+                  "personal store. Category-only below -- no sensitive content is reproduced.*", ""]
+        for path, summ in quarantined:
+            qlines.append("- %s  [%s]" % (path, summ))
+        report = report + "\n" + "\n".join(qlines) + "\n"
+
     print(report)
     if apply and not ambiguous:
-        n = apply_merges(branch, statuses, own_seat)
+        n = apply_merges(branch, promotable, own_seat)
         if n:
-            print(">> merged %d memory path(s) to main." % n)
+            print(">> merged %d clean memory path(s) to main." % n)
+        if quarantined:
+            print(">> QUARANTINED %d personal-class path(s) -- NOT promoted:" % len(quarantined))
+            for path, summ in quarantined:
+                print("   - %s  [%s]" % (path, summ))
     elif apply and ambiguous:
         print(">> NOT applied: branch is ambiguous (spans seats) -- refused, escalated to audit.")
-    if has_findings:
+
+    findings = has_findings or bool(quarantined)
+    if findings:
         os.makedirs(os.path.join(ROOT, "reports"), exist_ok=True)
         safe = branch.replace("/", "_")
         out = os.path.join(ROOT, "reports", "MEMORY-AUDIT-%s.md" % safe)
         with open(out, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(report + "\n")
         print(">> findings written to reports/%s" % os.path.basename(out))
-    return 1 if has_findings else 0
+    return 1 if findings else 0
 
 
 def main():
