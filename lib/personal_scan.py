@@ -40,7 +40,8 @@ _FAMILY = [
 ]
 # Health / medical / mental state. "breakdown" dropped (cost/task breakdown is technical).
 _HEALTH = [
-    r"\b(?:diagnos|illness|disease|medical|therapy|therapist|prescription|surgery|hospital|mental health)\b",
+    # "disease" dropped -- metaphorical use is common ("the root disease: duplicated truth").
+    r"\b(?:diagnos|illness|medical|therapy|therapist|prescription|surgery|hospitali[sz]|mental health)\b",
     r"\b(?:anxiety|depression|burnout|insomnia)\b",
 ]
 # Personal employment / job-hunt (distinct from fleet role changes).
