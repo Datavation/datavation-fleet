@@ -104,6 +104,29 @@
           "type": "api"
         }
       ]
+    },
+    {
+      "connectors": [
+        {
+          "id": "notion",
+          "write_scope": "read"
+        }
+      ],
+      "memory_owner": true,
+      "model": "claude-opus-4-8",
+      "name": "quinn",
+      "role": "cfo",
+      "source_seat": "Quinn",
+      "triggers": [
+        {
+          "type": "api"
+        },
+        {
+          "cron": "23 7 * * 1",
+          "enabled_by_default": false,
+          "type": "schedule"
+        }
+      ]
     }
   ],
   "utility_routines": [

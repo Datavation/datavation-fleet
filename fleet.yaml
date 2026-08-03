@@ -105,6 +105,26 @@ seats:
     triggers:
       - type: api                       # woken when a build is handed to it
 
+  # Seat 5 -- Quinn, the CFO seat. Reads/analyses/drafts, NEVER moves money (permanent control
+  # gate). Extract-first: consolidates from exported CSVs, so the build seat runs with NO
+  # QuickBooks connector at all. Least privilege = notion(read) only. The live QuickBooks connect
+  # and the live finance-data path are SEPARATE human-final gated decisions for the real Quinn
+  # seat post-cutover (Archy ruling 2026-08-02) -- never a parallel-build seat. Money/send
+  # connectors are refused by the forbidden-connector gate regardless.
+  - name: quinn
+    role: cfo
+    source_seat: Quinn
+    model: claude-opus-4-8
+    memory_owner: true
+    connectors:
+      - id: notion
+        write_scope: read               # read the Decision Board (To = Quinn); no write, no QB, no money
+    triggers:
+      - type: api                       # woken for a review / when handed a board item
+      - type: schedule                  # period-triggered routines (weekly / month-end)
+        cron: "23 7 * * 1"              # Mondays 07:23 -- weekly finance review
+        enabled_by_default: false
+
 # Utility routines (NOT seats): scheduled/ops routines a seat owns. Provisioned into the same
 # console runbook with the SAME least-privilege rule as seats. cody-heartbeat is the UAT-2
 # autonomous boot-proof: it runs bootcheck.py and commits a run-record -- so it needs NOTHING.
