@@ -36,6 +36,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0        # full history so merge-base works
+          # Condition (c) (Archy 2026-08-02): the push below uses this checkout's persisted
+          # credential = the workflow's OWN ephemeral GITHUB_TOKEN (permissions: contents:write
+          # above), NEVER any seat's PAT. No seat credential is referenced anywhere in this file.
+          # Condition (b) -- branch protection enforcing "only this CI token writes main; every
+          # seat/PAT is claude/*-only" -- is a repo-settings task, evidenced separately (queued).
 
       - name: Fetch all claude/* branches
         run: git fetch origin "+refs/heads/claude/*:refs/remotes/origin/claude/*"

@@ -222,11 +222,16 @@ def _connector_lines(conns):
     else:
         set_txt = "{ %s }" % allowed
         add_txt = "REMOVE ALL, then add back ONLY: %s" % allowed
+    forbidden = ", ".join(sorted(FORBIDDEN_BUILD_CONNECTOR_IDS))
     return [
         "    Connectors:  %s" % add_txt,
-        "    VERIFY:      re-open the saved routine; its connector list MUST equal exactly %s." % set_txt,
-        "                 The console attaches all org connectors by default -- delete every extra,",
-        "                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).",
+        "    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):",
+        "                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:",
+        "                   (a) PRESENT -- the connector list equals exactly %s; and" % set_txt,
+        "                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:",
+        "                        %s." % forbidden,
+        "                 The console attaches all org connectors by default, so proving (b) ABSENT",
+        "                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.",
     ]
 
 

@@ -17,9 +17,13 @@ In claude.ai/code/routines > New routine > Cloud:
     Repository:  Datavation/datavation-fleet (default branch)
     Environment: fleet-default
     Connectors:  REMOVE ALL. This routine needs no connector -- add nothing back.
-    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { } (NONE).
-                 The console attaches all org connectors by default -- delete every extra,
-                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { } (NONE); and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api (event-driven wake)
 
@@ -30,9 +34,13 @@ In claude.ai/code/routines > New routine > Cloud:
     Repository:  Datavation/datavation-fleet (default branch)
     Environment: fleet-default
     Connectors:  REMOVE ALL, then add back ONLY: telegram (sandbox), notion (read)
-    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { telegram (sandbox), notion (read) }.
-                 The console attaches all org connectors by default -- delete every extra,
-                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { telegram (sandbox), notion (read) }; and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api (event-driven wake)
 
@@ -43,9 +51,13 @@ In claude.ai/code/routines > New routine > Cloud:
     Repository:  Datavation/datavation-fleet (default branch)
     Environment: fleet-default
     Connectors:  REMOVE ALL, then add back ONLY: google-drive (read)
-    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { google-drive (read) }.
-                 The console attaches all org connectors by default -- delete every extra,
-                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { google-drive (read) }; and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api, schedule (event-driven wake)
 
@@ -56,9 +68,13 @@ In claude.ai/code/routines > New routine > Cloud:
     Repository:  Datavation/datavation-fleet (default branch)
     Environment: fleet-default
     Connectors:  REMOVE ALL, then add back ONLY: notion (read)
-    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { notion (read) }.
-                 The console attaches all org connectors by default -- delete every extra,
-                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { notion (read) }; and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api (event-driven wake)
 
@@ -69,9 +85,13 @@ In claude.ai/code/routines > New routine > Cloud:
     Repository:  Datavation/datavation-fleet (default branch)
     Environment: fleet-default
     Connectors:  REMOVE ALL. This routine needs no connector -- add nothing back.
-    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { } (NONE).
-                 The console attaches all org connectors by default -- delete every extra,
-                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    VERIFY (evidence, per Archy ruling 2026-08-02 -- no routine closed on assertion):
+                 re-open the SAVED routine and confirm BOTH, capturing a screenshot:
+                   (a) PRESENT -- the connector list equals exactly { } (NONE); and
+                   (b) ABSENT  -- NONE of the forbidden money/live-comms set is attached:
+                        docusign, gmail, ms365, outlook, paypal, quickbooks, square, stripe.
+                 The console attaches all org connectors by default, so proving (b) ABSENT
+                 matters as much as (a) PRESENT. A routine is DONE only with that evidence.
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    schedule (event-driven wake)
 
