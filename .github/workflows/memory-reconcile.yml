@@ -71,21 +71,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           AHEAD=$(git rev-list --count "main..$RECON_BRANCH" 2>/dev/null || echo 0)
           if [ "$AHEAD" -eq 0 ]; then
             echo "Nothing to promote -- no PR this run."
             exit 0
           fi
           git push -f origin "$RECON_BRANCH"
-          gh pr create --base main --head "$RECON_BRANCH" \
-            --title "memory reconcile" \
-            --body "Automated promotion of seats' own operational memory ($AHEAD commit(s)). Path-scoped + personal-data guarded. Nothing changes invisibly." \
-            2>/dev/null || echo "PR already open."
-          # Merge the PR (NOT --admin: no protection bypass). Requires the ruleset to need 0
-          # approvals; the token may merge its own PR. Enable auto-merge as a fallback if a
-          # required check is pending.
-          gh pr merge "$RECON_BRANCH" --squash --delete-branch \
-            || gh pr merge "$RECON_BRANCH" --squash --auto --delete-branch
+          # Open a PR if none is open yet. REQUIRES repo setting Settings > Actions > General >
+          # "Allow GitHub Actions to create and approve pull requests" = ON (else gh pr create is
+          # denied). Errors are NOT masked -- a failure here surfaces the real cause.
+          if ! gh pr view "$RECON_BRANCH" --json number >/dev/null 2>&1; then
+            gh pr create --base main --head "$RECON_BRANCH" \
+              --title "memory reconcile" \
+              --body "Automated promotion of seats' own operational memory ($AHEAD commit(s)). Path-scoped + personal-data guarded. Nothing changes invisibly."
+          fi
+          # Merge the PR (NOT --admin: no protection bypass). The ruleset must need 0 approvals so
+          # the token can merge its own PR.
+          gh pr merge "$RECON_BRANCH" --squash --delete-branch
 
       - name: Fail loud if reconcile surfaced refused/quarantined paths or conflicts
         if: steps.reconcile.outcome == 'failure'
