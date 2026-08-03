@@ -49,7 +49,20 @@ In claude.ai/code/routines > New routine > Cloud:
     Permissions: leave 'Allow unrestricted branch pushes' OFF.
     Triggers:    api, schedule (event-driven wake)
 
-## 4. Routine `cody-heartbeat`  -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)
+## 4. Routine `tessa`
+    Name:        tessa
+    Model:       claude-opus-4-8
+    Prompt:      paste agents/tessa/CLAUDE.md
+    Repository:  Datavation/datavation-fleet (default branch)
+    Environment: fleet-default
+    Connectors:  REMOVE ALL, then add back ONLY: notion (read)
+    VERIFY:      re-open the saved routine; its connector list MUST equal exactly { notion (read) }.
+                 The console attaches all org connectors by default -- delete every extra,
+                 especially money/live-comms (Stripe, PayPal, QuickBooks, Gmail, ms365).
+    Permissions: leave 'Allow unrestricted branch pushes' OFF.
+    Triggers:    api (event-driven wake)
+
+## 5. Routine `cody-heartbeat`  -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)
     Name:        cody-heartbeat
     Model:       claude-opus-4-8
     Prompt:      ops routine owned by seat 'cody' -- autonomous PC-offline boot proof (runs bootcheck.py --trigger schedule)

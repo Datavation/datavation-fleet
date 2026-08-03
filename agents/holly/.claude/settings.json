@@ -4,7 +4,9 @@
       "Write(agents/cody/**)",
       "Edit(agents/cody/**)",
       "Write(agents/marshall/**)",
-      "Edit(agents/marshall/**)"
+      "Edit(agents/marshall/**)",
+      "Write(agents/tessa/**)",
+      "Edit(agents/tessa/**)"
     ]
   }
 }

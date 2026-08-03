@@ -86,6 +86,24 @@
           "type": "schedule"
         }
       ]
+    },
+    {
+      "connectors": [
+        {
+          "id": "notion",
+          "write_scope": "read"
+        }
+      ],
+      "memory_owner": true,
+      "model": "claude-opus-4-8",
+      "name": "tessa",
+      "role": "qa",
+      "source_seat": "Tessa",
+      "triggers": [
+        {
+          "type": "api"
+        }
+      ]
     }
   ],
   "utility_routines": [

@@ -91,6 +91,20 @@ seats:
         cron: "41 * * * *"
         enabled_by_default: false
 
+  # Seat 4 -- Tessa, the independent QA gate. Verifies builds from a clean clone of main; never
+  # fixes, never promotes. Read-only board access, NO write/messaging/money connector -- she files
+  # a verdict and nothing goes outbound. Her independence maps onto the cloud clean-clone model.
+  - name: tessa
+    role: qa
+    source_seat: Tessa
+    model: claude-opus-4-8
+    memory_owner: true
+    connectors:
+      - id: notion
+        write_scope: read               # read the Decision Board (To = Tessa); no write
+    triggers:
+      - type: api                       # woken when a build is handed to it
+
 # Utility routines (NOT seats): scheduled/ops routines a seat owns. Provisioned into the same
 # console runbook with the SAME least-privilege rule as seats. cody-heartbeat is the UAT-2
 # autonomous boot-proof: it runs bootcheck.py and commits a run-record -- so it needs NOTHING.
